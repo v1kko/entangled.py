@@ -8,6 +8,12 @@ from .main import main
 import watchfiles
 
 
+def watch_filter(change: watchfiles.Change, path: str) -> bool:
+    if path.startswith(".entangled"):
+        return False
+    return True
+
+
 def _watch(_stop_event: Event | None = None, _start_event: Event | None = None):
     """Keep a loop running, watching for changes. This interface is separated
     from the CLI one, so that it can be tested using threading instead of
@@ -23,7 +29,7 @@ def _watch(_stop_event: Event | None = None, _start_event: Event | None = None):
 
     dirs = "."  # find_watch_dirs()
     
-    for changes in watchfiles.watch(dirs, stop_event=_stop_event):
+    for changes in watchfiles.watch(dirs, stop_event=_stop_event, watch_filter=watch_filter):
         run_sync()
 
 
