@@ -1,6 +1,8 @@
 from threading import Event
+from pathlib import Path
 
 from ..status import find_watch_dirs
+from ..logging import logger
 
 from .sync import run_sync
 from .main import main
@@ -8,8 +10,11 @@ from .main import main
 import watchfiles
 
 
+log = logger()
+
+
 def watch_filter(change: watchfiles.Change, path: str) -> bool:
-    if path.startswith(".entangled"):
+    if Path(path).relative_to(Path.cwd()).as_posix().startswith(".entangled"):
         return False
     return True
 
@@ -30,6 +35,7 @@ def _watch(_stop_event: Event | None = None, _start_event: Event | None = None):
     dirs = "."  # find_watch_dirs()
     
     for changes in watchfiles.watch(dirs, stop_event=_stop_event, watch_filter=watch_filter):
+        log.debug(changes)        
         run_sync()
 
 
