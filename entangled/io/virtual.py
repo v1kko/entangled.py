@@ -14,6 +14,9 @@ import os
 import tempfile
 
 from .stat import hexdigest, stat, FileData, Stat
+from ..logging import logger
+
+log = logger()
 
 
 def assure_final_newline(s: str) -> str:
@@ -104,6 +107,7 @@ class FileCache(AbstractFileCache):
         If you expect data to have changed, you should first `reset` the cache.
         """
         if key not in self._data:
+            log.debug(f"Reading `{key}`")
             if (s := stat(key)) is None:
                 raise FileNotFoundError(key)
             self._data[key] = s
@@ -141,9 +145,11 @@ class FileCache(AbstractFileCache):
         if key in self:
             new_digest = hexdigest(content)
             if new_digest == self[key].stat.hexdigest:
+                log.debug("Not writing `{key}`, content same")
                 return
             del self._data[key]
 
+        log.debug(f"Writing `{key}`")
         key.parent.mkdir(parents=True, exist_ok=True)
         atomic_write(key, content, mode)
 

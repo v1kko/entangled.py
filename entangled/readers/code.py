@@ -7,7 +7,9 @@ import re
 from .types import InputStream
 from ..model import ReferenceId, ReferenceName
 from ..errors.user import ParseError, IndentationError
+from ..logging import logger
 
+log = logger()
 
 @dataclass
 class Block:
@@ -68,6 +70,9 @@ def read_block(namespace: tuple[str, ...], indent: str, input: InputStream) -> G
     if (block_data := open_block(line1)) is None:
         return None
     _ = next(input)
+
+    log.debug(f"reading code block {block_data}")
+
     if block_data.indent < indent:
         raise IndentationError(pos)
 
@@ -97,4 +102,3 @@ def read_block(namespace: tuple[str, ...], indent: str, input: InputStream) -> G
                 return ""
 
     raise ParseError(pos, "unexpected end of file")
-

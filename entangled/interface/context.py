@@ -10,7 +10,9 @@ from ..readers.yaml_header import get_config
 from ..readers import read_yaml_header, process_token, collect_plain_text, raw_markdown, InputStream, run_reader
 
 from functools import partial
-import logging
+from ..logging import logger
+
+log = logger()
 
 @dataclass
 class Context:
@@ -18,9 +20,10 @@ class Context:
     _hooks: dict[str, HookBase] = field(default_factory=dict)
     
     def __post_init__(self):
+        log.debug(f"context: hook config: {self.config.hook}")
         for h in self.config.hooks:
             if h not in self._hooks:
-                logging.debug("context: loading hook %s", h)
+                log.debug("context: loading hook %s", h)
                 hook = create_hook(self.config, h)
                 if hook is None:
                     continue

@@ -38,6 +38,7 @@ class Hook(HookBase):
 
     def __init__(self, config: Config):
         super().__init__(config)
+        log.debug(f"REPL hook config: {config}")
         self.config = config.config
         self.sessions: dict[str, Session] = {}
 
