@@ -25,14 +25,15 @@ hooks: dict[str, type[HookBase]] = {
 } | external_hooks
 
 
-def create_hook(cfg: Config, h: str) -> HookBase | None:
+def create_hook(cfg: Config, h: str, state: HookBase.State) -> HookBase | None:
     if h not in hooks:
         logging.error("hook `%s` not found", h)
         return None
 
     try:
-        hook_cfg = msgspec.convert(cfg.hook.get(h, {}), type=hooks[h].Config)
-        hook_instance = hooks[h](hook_cfg)
+        hook_cls = hooks[h]
+        hook_cfg = msgspec.convert(cfg.hook.get(h, {}), type=hook_cls.Config)
+        hook_instance = hook_cls(hook_cfg, state)
         hook_instance.check_prerequisites()
         return hook_instance
     except PrerequisitesFailed as e:

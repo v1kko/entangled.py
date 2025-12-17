@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import json
 from typing import final, override
 
@@ -36,11 +37,15 @@ class Hook(HookBase):
     class Config(HookBase.Config):
         config: dict[str, ReplConfig] = field(default_factory=dict)
 
-    def __init__(self, config: Config):
-        super().__init__(config)
+    @dataclass
+    class State(HookBase.State):
+        sessions: dict[str, Session] = field(default_factory=dict)
+
+    def __init__(self, config: Config, state: State):
+        super().__init__(config, state)
         log.debug(f"REPL hook config: {config}")
         self.config = config.config
-        self.sessions: dict[str, Session] = {}
+        self.sessions: dict[str, Session] = state.sessions
 
     @override
     def on_read(self, code: CodeBlock):

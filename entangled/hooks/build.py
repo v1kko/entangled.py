@@ -64,9 +64,13 @@ class Hook(HookBase):
             exec_cmd = config.runners[self.language.name].format(script=self.scriptfile)
             return f"{self.target}: {self.scriptfile} {dep_str}\n" + f"\t{exec_cmd}"
 
-    def __init__(self, config: Hook.Config):
-        super().__init__(config)
-        self.recipes: list[Hook.Recipe] = []
+    @dataclass
+    class State(HookBase.State):
+        recipes: list[Hook.Recipe]
+
+    def __init__(self, config: Hook.Config, state: Hook.State):
+        super().__init__(config, state)
+        self.recipes: list[Hook.Recipe] = state.recipes
         self.config = config
 
     @override
@@ -108,4 +112,3 @@ class Hook(HookBase):
             rules="\n\n".join(r.to_makefile(self.config) for r in self.recipes),
         )
         t.write(Path(".entangled/build/Makefile"), makefile, [])
-

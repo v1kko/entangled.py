@@ -1,6 +1,6 @@
 from __future__ import annotations
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 from pathlib import Path
 from typing import final, override
@@ -48,12 +48,18 @@ class Hook(HookBase):
                 "path": path
             }
 
-    def __init__(self, config: Hook.Config):
-        super().__init__(config)
-        self.recipes: list[Hook.Recipe] = []
-        self.collections: dict[str, list[str]] = defaultdict(list)
+    @dataclass
+    class State(HookBase.State):
+        recipes: list[Hook.Recipe] = field(default_factory=list)
+        collections: dict[str, list[str]] = field(default_factory=lambda: defaultdict(list))
+        sources: list[Path] = field(default_factory=list)
+
+    def __init__(self, config: Hook.Config, state: Hook.State):
+        super().__init__(config, state)
+        self.recipes: list[Hook.Recipe] = state.recipes
+        self.collections: dict[str, list[str]] = state.collections
         self.config = config
-        self.sources: list[Path] = []
+        self.sources: list[Path] = state.sources
 
     @override
     def pre_tangle(self, refs: ReferenceMap):

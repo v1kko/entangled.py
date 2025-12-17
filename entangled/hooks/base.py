@@ -19,7 +19,10 @@ class HookBase:
     class Config(Struct):
         pass
 
-    def __init__(self, config: Config):
+    class State:
+        pass
+
+    def __init__(self, config: Config, state: State):
         pass
 
     @staticmethod
