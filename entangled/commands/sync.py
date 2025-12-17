@@ -16,8 +16,8 @@ class Action(Enum):
 
 
 def sync_action(doc: Document) -> Action:
-    input_file_list = doc.input_files()
     fs = FileCache()
+    input_file_list = doc.input_files(fs)
 
     with filedb(readonly=True) as db:
         changed = set(db.changed_files(fs))

@@ -24,6 +24,7 @@ def test_transaction(tmp_path: Path):
             _ = f.write("ciao")
 
         fs.reset()
+        print(Path(".entangled/filedb.json").read_text())
         with filedb() as db:
             assert Path("a") in db
             assert Path("b") in db
