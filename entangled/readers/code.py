@@ -85,9 +85,12 @@ def read_block(namespace: tuple[str, ...], indent: str, input: InputStream) -> G
 
         pos, line = next(input)
         if (close_block_data := close_block(line)) is None:
-            if not line.startswith(block_data.indent):
+            if not line.strip():
+                content += line.lstrip(" \t")
+            elif not line.startswith(block_data.indent):
                 raise IndentationError(pos)
-            content += line.removeprefix(block_data.indent)
+            else:
+                content += line.removeprefix(block_data.indent)
         else:
             if close_block_data.indent != block_data.indent:
                 raise IndentationError(pos)

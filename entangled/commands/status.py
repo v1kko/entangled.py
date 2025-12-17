@@ -2,6 +2,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from ..status import list_dependent_files
 from ..config import Config, read_config, get_input_files
+from ..io import FileCache
 from pathlib import Path
 
 from rich.console import Console, Group
@@ -30,7 +31,8 @@ def files_panel(file_list: Iterable[Path], title: str) -> Panel:
 
 
 def rich_status():
-    cfg = Config() | read_config()
+    fs = FileCache()
+    cfg = Config() | read_config(fs)
     config_table = Table()
     config_table.add_column("name")
     config_table.add_column("value")
@@ -47,7 +49,7 @@ def rich_status():
         Panel(config_table, title="config", border_style="dark_cyan"),
         Columns(
             [
-                files_panel(get_input_files(cfg), "input files"),
+                files_panel(get_input_files(fs, cfg), "input files"),
                 files_panel(list_dependent_files(), "dependent files"),
             ]
         ),

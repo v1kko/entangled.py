@@ -5,6 +5,7 @@ A virtual file system layer to cache file reads and stats.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from typing import override
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -57,6 +58,10 @@ class AbstractFileCache(ABC):
         ...
 
     @abstractmethod
+    def glob(self, pattern: str) -> Iterable[Path]:
+        ...
+
+    @abstractmethod
     def write(self, key: Path, content: str, mode: int | None = None):
         ...
 
@@ -76,6 +81,9 @@ class VirtualFS(AbstractFileCache):
 
     def __delitem__(self, key: Path):
         del self._data[key]
+
+    def glob(self, pattern: str) -> Iterable[Path]:
+        return filter(lambda p: p.full_match(pattern), self._data.keys())
 
     @override
     def write(self, key: Path, content: str, mode: int | None = None):
@@ -133,6 +141,10 @@ class FileCache(AbstractFileCache):
             parent = parent.parent
         if key in self._data:
             del self._data[key]
+
+    @override
+    def glob(self, pattern: str) -> Iterable[Path]:
+        return filter(Path.is_file, map(lambda p: p.relative_to(Path.cwd()), Path.cwd().glob(pattern)))
 
     @override
     def write(self, key: Path, content: str, mode: int | None = None):

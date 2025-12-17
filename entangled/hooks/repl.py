@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 from typing import final, override
 
@@ -7,7 +7,7 @@ import msgspec
 from entangled.config.language import Language
 from .base import HookBase
 from repl_session import ReplConfig, ReplSession, ReplCommand
-from msgspec import Struct, field
+from msgspec import Struct
 from pathlib import Path
 
 from ..logging import logger
@@ -35,7 +35,7 @@ def strip_comments(code: str, language: Language) -> str:
 @final
 class Hook(HookBase):
     class Config(HookBase.Config):
-        config: dict[str, ReplConfig] = field(default_factory=dict)
+        config: dict[str, ReplConfig] = msgspec.field(default_factory=dict)
 
     @dataclass
     class State(HookBase.State):

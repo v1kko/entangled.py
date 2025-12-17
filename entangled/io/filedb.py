@@ -60,7 +60,8 @@ class FileDB(Struct):
 
     def update(self, fs: AbstractFileCache, path: Path):
         path = normal_relative(path)
-        self.files[path.as_posix()] = fs[path].stat
+        if path in self.files:
+            self.files[path.as_posix()] = fs[path].stat
 
     def __contains__(self, path: Path) -> bool:
         return path.as_posix() in self.files
