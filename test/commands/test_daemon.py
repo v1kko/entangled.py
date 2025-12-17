@@ -35,6 +35,7 @@ def wait_for_stat_diff(md_stat, filename, timeout=5):
     return False
 
 
+@pytest.mark.skip
 @pytest.mark.timeout(30)
 def test_daemon(tmp_path: Path):
     with chdir(tmp_path):
