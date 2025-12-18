@@ -84,7 +84,7 @@ def get_input_files(fs: AbstractFileCache, cfg: Config) -> list[Path]:
     """
     log.debug("watch list: %s; ignoring: %s", cfg.watch_list, cfg.ignore_list)
     input_file_list = filter(
-        lambda p: not any(p.full_match(pat) for pat in cfg.ignore_list),
+        lambda p: not any(p.match(pat) for pat in cfg.ignore_list),
         chain.from_iterable(map(fs.glob, cfg.watch_list)))
     log.debug("input file list %s", input_file_list)
     return sorted(input_file_list)

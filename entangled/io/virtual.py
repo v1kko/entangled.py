@@ -83,7 +83,7 @@ class VirtualFS(AbstractFileCache):
         del self._data[key]
 
     def glob(self, pattern: str) -> Iterable[Path]:
-        return filter(lambda p: p.full_match(pattern), self._data.keys())
+        return filter(lambda p: p.match(pattern), self._data.keys())
 
     @override
     def write(self, key: Path, content: str, mode: int | None = None):
