@@ -12,11 +12,14 @@ from ..config import AnnotationMethod
 from ..iterators.lines import lines
 from ..errors.user import UserError
 from ..text_location import TextLocation
+from ..logging import logger
 
 from .reference_map import ReferenceMap
 from .reference_id import ReferenceId
 from .reference_name import ReferenceName
 
+
+log = logger()
 
 @dataclass
 class CyclicReference(UserError):
@@ -86,8 +89,9 @@ def naked_tangler(refs: ReferenceMap) -> Tangler:
 
         with visitor.visit(ref):
             for line in lines(code_block.source):
-                if m := re.match(r"^(?P<indent>\s*)<<(?P<refname>[\w:-]+)>>\s*$", line.rstrip()):
+                if m := re.match(r"^(?P<indent>\s*)<<(?P<refname>[\w:/_.-]+)>>\s*$", line.rstrip()):
                     ref_name = ReferenceName.from_str(m["refname"], code_block.namespace)
+                    log.debug(f"tangling reference `{ref_name}`")
                     if not refs.has_name(ref_name):
                         raise MissingReference(code_block.origin, ref_name)
                     ref_lst = refs.select_by_name(ref_name)

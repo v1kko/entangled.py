@@ -99,7 +99,7 @@ def read_block(namespace: tuple[str, ...], indent: str, input: InputStream) -> G
             if block_data.is_init:
                 extra_indent = block_data.indent.removeprefix(indent)
                 ref = block_data.ref
-                ref_str = ref.name if ref.name.namespace == namespace else str(ref.name)
+                ref_str = ref.name.name if ref.name.namespace == namespace else str(ref.name)
                 return f"{extra_indent}<<{ref_str}>>\n"
             else:
                 return ""
