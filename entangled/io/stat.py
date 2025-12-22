@@ -10,8 +10,6 @@ import os
 import logging
 import time
 
-from ..utility import normal_relative
-
 
 def hexdigest(s: str) -> str:
     """Creates a MD5 hash digest from a string. Before hashing, the string has
@@ -66,5 +64,6 @@ class FileData:
 
 
 def stat(path: Path) -> FileData | None:
-    path = normal_relative(path)
+    if path.is_absolute():
+        path = path.relative_to(Path.cwd())
     return FileData.from_path(path)

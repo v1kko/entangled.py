@@ -1,3 +1,4 @@
+from dataclasses import dataclass, field
 import json
 from typing import final, override
 
@@ -6,7 +7,7 @@ import msgspec
 from entangled.config.language import Language
 from .base import HookBase
 from repl_session import ReplConfig, ReplSession, ReplCommand
-from msgspec import Struct, field
+from msgspec import Struct
 from pathlib import Path
 
 from ..logging import logger
@@ -34,12 +35,17 @@ def strip_comments(code: str, language: Language) -> str:
 @final
 class Hook(HookBase):
     class Config(HookBase.Config):
-        config: dict[str, ReplConfig] = field(default_factory=dict)
+        config: dict[str, ReplConfig] = msgspec.field(default_factory=dict)
 
-    def __init__(self, config: Config):
-        super().__init__(config)
+    @dataclass
+    class State(HookBase.State):
+        sessions: dict[str, Session] = field(default_factory=dict)
+
+    def __init__(self, config: Config, state: State):
+        super().__init__(config, state)
+        log.debug(f"REPL hook config: {config}")
         self.config = config.config
-        self.sessions: dict[str, Session] = {}
+        self.sessions: dict[str, Session] = state.sessions
 
     @override
     def on_read(self, code: CodeBlock):

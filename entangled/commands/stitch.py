@@ -19,13 +19,9 @@ def stitch(*, force: bool = False, show: bool = False):
     else:
         mode = TransactionMode.FAIL
 
-    try:
-        doc = Document()
+    doc = Document()
 
-        with transaction(mode) as t:
-            doc.load(t)
-            doc.load_all_code(t)
-            doc.stitch(t)
-
-    except UserError as e:
-        e.handle()
+    with transaction(mode) as t:
+        doc.load(t)
+        doc.load_all_code(t)
+        doc.stitch(t)

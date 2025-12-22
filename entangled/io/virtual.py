@@ -5,6 +5,7 @@ A virtual file system layer to cache file reads and stats.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from typing import override
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -14,6 +15,9 @@ import os
 import tempfile
 
 from .stat import hexdigest, stat, FileData, Stat
+from ..logging import logger
+
+log = logger()
 
 
 def assure_final_newline(s: str) -> str:
@@ -54,6 +58,10 @@ class AbstractFileCache(ABC):
         ...
 
     @abstractmethod
+    def glob(self, pattern: str) -> Iterable[Path]:
+        ...
+
+    @abstractmethod
     def write(self, key: Path, content: str, mode: int | None = None):
         ...
 
@@ -73,6 +81,9 @@ class VirtualFS(AbstractFileCache):
 
     def __delitem__(self, key: Path):
         del self._data[key]
+
+    def glob(self, pattern: str) -> Iterable[Path]:
+        return filter(lambda p: p.match(pattern), self._data.keys())
 
     @override
     def write(self, key: Path, content: str, mode: int | None = None):
@@ -104,6 +115,7 @@ class FileCache(AbstractFileCache):
         If you expect data to have changed, you should first `reset` the cache.
         """
         if key not in self._data:
+            log.debug(f"Reading `{key}`")
             if (s := stat(key)) is None:
                 raise FileNotFoundError(key)
             self._data[key] = s
@@ -131,6 +143,10 @@ class FileCache(AbstractFileCache):
             del self._data[key]
 
     @override
+    def glob(self, pattern: str) -> Iterable[Path]:
+        return filter(Path.is_file, map(lambda p: p.relative_to(Path.cwd()), Path.cwd().glob(pattern)))
+
+    @override
     def write(self, key: Path, content: str, mode: int | None = None):
         """
         Write contents to a file. If `content` has the same digest as the known
@@ -141,9 +157,11 @@ class FileCache(AbstractFileCache):
         if key in self:
             new_digest = hexdigest(content)
             if new_digest == self[key].stat.hexdigest:
+                log.debug("Not writing `{key}`, content same")
                 return
             del self._data[key]
 
+        log.debug(f"Writing `{key}`")
         key.parent.mkdir(parents=True, exist_ok=True)
         atomic_write(key, content, mode)
 

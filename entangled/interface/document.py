@@ -3,7 +3,7 @@ from pathlib import PurePath, Path
 
 from ..config import Config, ConfigUpdate, get_input_files, read_config, AnnotationMethod
 from ..model import ReferenceMap, tangle_ref, Content, content_to_text
-from ..io import Transaction
+from ..io import AbstractFileCache, FileCache, Transaction
 from ..readers import code
 from ..iterators import numbered_lines, run_generator
 from ..logging import logger
@@ -29,10 +29,10 @@ class Document:
         self.context.config = new_config
 
     def __post_init__(self):
-        self.config |= read_config()
+        self.config |= read_config(FileCache())
 
-    def input_files(self):
-        return get_input_files(self.config)
+    def input_files(self, fs: AbstractFileCache):
+        return get_input_files(fs, self.config)
 
     def source_text(self, path: Path) -> tuple[str, set[PurePath]]:
         deps = set()
@@ -71,12 +71,14 @@ class Document:
         t.update(path)
 
     def load_all_code(self, t: Transaction):
+        log.debug(f"Targets: {self.reference_map.targets()}")
         for tgt in self.reference_map.targets():
+            log.debug(f"Reading code: `{tgt}`")
             if Path(tgt) in t.fs:
                 self.load_code(t, Path(tgt))
 
     def load(self, t: Transaction):
-        files = get_input_files(self.config)
+        files = get_input_files(t.fs, self.config)
         if len(files) == 1:
             log.debug(f"single input file `{files[0]}`")
             self.context |= self.load_source(t, files[0])
@@ -102,4 +104,3 @@ class Document:
         for path in self.content:
             text, deps = self.source_text(path)
             t.write(path, text, map(Path, deps))
-

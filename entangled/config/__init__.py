@@ -20,13 +20,13 @@ from .namespace_default import NamespaceDefault
 from ..logging import logger
 from ..version import __version__
 from ..errors.user import HelpfulUserError
-
+from ..io import AbstractFileCache
 
 log = logger()
 
 
 def read_config_from_toml(
-    path: Path, section: str | None = None
+    fs: AbstractFileCache, path: Path, section: str | None = None
 ) -> ConfigUpdate | None:
     """Read a config from given `path` in given `section`. The path should refer to
     a TOML file that should decode to a `Config` object. If `section` is given, only
@@ -39,17 +39,17 @@ def read_config_from_toml(
     read_config_from_toml(Path("./pyproject.toml"), "tool.entangled")
     ```
     """
-    if not path.exists():
+    if path not in fs:
         return None
     try:
-        with open(path, "rb") as f:
-            json: Any = tomllib.load(f)  # pyright: ignore[reportExplicitAny]
-            if section is not None:
-                for s in section.split("."):
-                    json = json[s]  # pyright: ignore[reportAny]
-            update = msgspec.convert(json, type=ConfigUpdate)
-            log.debug("Read config from `%s`", path)
-            return update
+        content = fs[path].content
+        json: Any = tomllib.loads(content)
+        if section is not None:
+            for s in section.split("."):
+                json = json[s]  # pyright: ignore[reportAny]
+        update = msgspec.convert(json, type=ConfigUpdate)
+        log.debug("Read config from `%s`", path)
+        return update
 
     except (msgspec.ValidationError, tomllib.TOMLDecodeError) as e:
         raise HelpfulUserError(f"Could not read config: {e}")
@@ -59,23 +59,33 @@ def read_config_from_toml(
         return None
 
 
-def read_config() -> ConfigUpdate | None:
-    if Path("./entangled.toml").exists():
-        return read_config_from_toml(Path("./entangled.toml"))
-    if Path("./pyproject.toml").exists():
+def read_config(fs: AbstractFileCache) -> ConfigUpdate | None:
+    """
+    Read configuration from any of the possible hard-coded locations:
+
+    - `./entangled.toml`
+    - `./pyproject.toml` section `[tool.entangled]`.
+
+    Returns a `ConfigUpdate` or `None`. To get the full `Config` object,
+    run `Config() | read_config(fs)`.
+    """
+    if Path("./entangled.toml") in fs:
+        return read_config_from_toml(fs, Path("./entangled.toml"))
+    if Path("./pyproject.toml") in fs:
         return (
-            read_config_from_toml(Path("./pyproject.toml"), "tool.entangled")
+            read_config_from_toml(fs, Path("./pyproject.toml"), "tool.entangled")
         )
     return None
 
 
-def get_input_files(cfg: Config) -> list[Path]:
+def get_input_files(fs: AbstractFileCache, cfg: Config) -> list[Path]:
+    """
+    Get a sorted list of all input files for this project.
+    """
     log.debug("watch list: %s; ignoring: %s", cfg.watch_list, cfg.ignore_list)
-    include_file_list = chain.from_iterable(map(Path(".").glob, cfg.watch_list))
-    input_file_list = [
-        path for path in include_file_list
-        if not any(path.match(pat) for pat in cfg.ignore_list) and path.is_file()
-    ]
+    input_file_list = filter(
+        lambda p: not any(p.match(pat) for pat in cfg.ignore_list),
+        chain.from_iterable(map(fs.glob, cfg.watch_list)))
     log.debug("input file list %s", input_file_list)
     return sorted(input_file_list)
 

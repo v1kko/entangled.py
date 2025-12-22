@@ -20,15 +20,10 @@ def reset():
     Resets the file database. This performs a tangle without actually
     writing output to the files, but updating the database as if we were.
     """
-    
-    try:
-        doc = Document()
-        mode = TransactionMode.RESETDB
+    doc = Document()
+    mode = TransactionMode.RESETDB
 
-        with transaction(mode) as t:
-            doc.load(t)
-            doc.tangle(t)
-            t.clear_orphans()
-
-    except UserError as e:
-        logging.error(str(e))
+    with transaction(mode) as t:
+        doc.load(t)
+        doc.tangle(t)
+        t.clear_orphans()

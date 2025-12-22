@@ -22,16 +22,12 @@ def tangle(*, annotate: AnnotationMethod | None = None, force: bool = False, sho
     else:
         mode = TransactionMode.FAIL
 
-    try:
-        doc = Document()
+    doc = Document()
 
-        with transaction(mode) as t:
-            doc.load(t)
-            doc.tangle(t, annotate)
-            t.clear_orphans()
+    with transaction(mode) as t:
+        doc.load(t)
+        doc.tangle(t, annotate)
+        t.clear_orphans()
 
-        for h in doc.context.all_hooks:
-            h.post_tangle(doc.reference_map)
-
-    except UserError as e:
-        e.handle()
+    for h in doc.context.all_hooks:
+        h.post_tangle(doc.reference_map)

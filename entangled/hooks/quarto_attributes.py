@@ -80,8 +80,8 @@ def amend_code_properties(code_block: CodeBlock):
 
 @final
 class Hook(HookBase):
-    def __init__(self, config: Hook.Config):
-        super().__init__(config)
+    def __init__(self, config: Hook.Config, state: Hook.State):
+        super().__init__(config, state)
         self.config = config
 
     @override

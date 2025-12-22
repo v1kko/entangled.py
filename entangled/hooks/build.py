@@ -6,12 +6,13 @@ directory.
 """
 
 from __future__ import annotations
-from dataclasses import dataclass
-from msgspec import field
+from dataclasses import dataclass, field
 from pathlib import Path, PurePath
 from subprocess import run, SubprocessError, DEVNULL
 import logging
 from typing import final, override
+
+import msgspec
 
 from ..config.language import Language
 from ..io import Transaction
@@ -45,7 +46,7 @@ EXEC_CMDS = {
 @final
 class Hook(HookBase):
     class Config(HookBase.Config):
-        runners: dict[str, str] = field(default_factory=dict)
+        runners: dict[str, str] = msgspec.field(default_factory=dict)
 
         def __post_init__(self):
             for k, v in EXEC_CMDS.items():
@@ -64,9 +65,13 @@ class Hook(HookBase):
             exec_cmd = config.runners[self.language.name].format(script=self.scriptfile)
             return f"{self.target}: {self.scriptfile} {dep_str}\n" + f"\t{exec_cmd}"
 
-    def __init__(self, config: Hook.Config):
-        super().__init__(config)
-        self.recipes: list[Hook.Recipe] = []
+    @dataclass
+    class State(HookBase.State):
+        recipes: list[Hook.Recipe] = field(default_factory=list)
+
+    def __init__(self, config: Hook.Config, state: Hook.State):
+        super().__init__(config, state)
+        self.recipes: list[Hook.Recipe] = state.recipes
         self.config = config
 
     @override
@@ -108,4 +113,3 @@ class Hook(HookBase):
             rules="\n\n".join(r.to_makefile(self.config) for r in self.recipes),
         )
         t.write(Path(".entangled/build/Makefile"), makefile, [])
-

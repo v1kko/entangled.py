@@ -20,5 +20,4 @@ def main(version: bool = False, debug: bool = False):
         sys.exit(0)
 
     configure(debug)
-    logger().debug(f"Welcome to Entangled v{__version__}!")
-
+    logger().info(f"Welcome to Entangled v{__version__}!")

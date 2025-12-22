@@ -16,8 +16,8 @@ class Action(Enum):
 
 
 def sync_action(doc: Document) -> Action:
-    input_file_list = doc.input_files()
     fs = FileCache()
+    input_file_list = doc.input_files(fs)
 
     with filedb(readonly=True) as db:
         changed = set(db.changed_files(fs))
@@ -59,29 +59,24 @@ def stitch(doc: Document):
         doc.tangle(t)
         for h in doc.context.all_hooks:
             h.post_tangle(doc.reference_map)
-        
+
 
 def run_sync():
-    try:
-        doc = Document()
-        match sync_action(doc):
-            case Action.TANGLE:
-                logging.info("Tangling.")
-                tangle(doc)
+    doc = Document()
+    match sync_action(doc):
+        case Action.TANGLE:
+            logging.info("Tangling.")
+            tangle(doc)
 
-            case Action.STITCH:
-                logging.info("Stitching.")
-                stitch(doc)
+        case Action.STITCH:
+            logging.info("Stitching.")
+            stitch(doc)
 
-            case Action.NOTHING:
-                pass
-
-    except UserError as e:
-        e.handle()
+        case Action.NOTHING:
+            pass
 
 
 @main.command()
 def sync():
     """Be smart wether to tangle or stich"""
     run_sync()
-

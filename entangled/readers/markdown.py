@@ -17,7 +17,9 @@ from .delimiters import delimited_token_getter
 from .yaml_header import read_yaml_header, get_config
 
 import re
-import logging
+from ..logging import logger
+
+log = logger()
 
 
 def ignore_block(config: Config) -> Reader[RawContent, bool]:
@@ -81,7 +83,7 @@ def code_block(config: Config) -> Reader[RawContent, bool]:
         language_class = first(get_classes(properties))
         language = config.get_language(language_class) if language_class else None
         if language_class and not language:
-            logging.warning(f"`{block.origin}`: language `{language_class}` unknown.")
+            log.warning(f"`{block.origin}`: language `{language_class}` unknown.")
         source = dedent(block.origin, block.content, indent)
 
         yield CodeBlock(
@@ -140,6 +142,10 @@ def process_code_block(hooks: list[HookBase], refs: ReferenceMap, code_block: Co
     if ref_name is None:
         ref_name = f"unnamed-{code_block.origin}"
     ref = refs.new_id(code_block.origin.filename, ReferenceName(code_block.namespace, ref_name))
+
+    log.debug(f"Read codeblock `{ref}`")
+    if target_file:
+        log.debug(f"   - target file: `{target_file}`")
     refs[ref] = code_block
 
     return ref
@@ -171,4 +177,3 @@ def collect_plain_text[T](inp: Iterator[PlainText | T]) -> Generator[PlainText |
                 yield token
 
     yield from flush()
-

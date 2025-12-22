@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from .io import filedb
+from .io import filedb, FileCache
 from .config import get_input_files, Config, read_config
 
 from pathlib import Path
@@ -18,8 +18,9 @@ def safe_glob(pattern: str) -> Iterable[Path]:
 
 def find_watch_dirs():
     """List all directories that contain files that need watching."""
-    cfg = Config() | read_config()
-    input_file_list = get_input_files(cfg)
+    fs = FileCache()
+    cfg = Config() | read_config(fs)
+    input_file_list = get_input_files(fs, cfg)
     markdown_dirs = set(p.parent for p in input_file_list)
     with filedb(readonly=True) as db:
         code_dirs = set(p.parent for p in db.managed_files)

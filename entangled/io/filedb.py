@@ -15,7 +15,7 @@ from filelock import FileLock
 from entangled.errors.user import HelpfulUserError
 
 from ..version import __version__
-from ..utility import normal_relative, ensure_parent
+from ..utility import ensure_parent
 from .virtual import AbstractFileCache
 from .stat import Stat, hexdigest
 
@@ -54,13 +54,16 @@ class FileDB(Struct):
                 if fs[Path(p)].stat != known_stat)
 
     def create_target(self, fs: AbstractFileCache, path: Path):
-        path = normal_relative(path)
+        if path.is_absolute():
+            path = path.relative_to(Path.cwd())
         self.update(fs, path)
         self.targets.add(path.as_posix())
 
     def update(self, fs: AbstractFileCache, path: Path):
-        path = normal_relative(path)
-        self.files[path.as_posix()] = fs[path].stat
+        if path.is_absolute():
+            path = path.relative_to(Path.cwd())
+        if path in fs:
+            self.files[path.as_posix()] = fs[path].stat
 
     def __contains__(self, path: Path) -> bool:
         return path.as_posix() in self.files

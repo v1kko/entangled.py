@@ -7,7 +7,9 @@ import re
 from .types import InputStream
 from ..model import ReferenceId, ReferenceName
 from ..errors.user import ParseError, IndentationError
+from ..logging import logger
 
+log = logger()
 
 @dataclass
 class Block:
@@ -68,6 +70,9 @@ def read_block(namespace: tuple[str, ...], indent: str, input: InputStream) -> G
     if (block_data := open_block(line1)) is None:
         return None
     _ = next(input)
+
+    log.debug(f"reading code block {block_data}")
+
     if block_data.indent < indent:
         raise IndentationError(pos)
 
@@ -80,9 +85,12 @@ def read_block(namespace: tuple[str, ...], indent: str, input: InputStream) -> G
 
         pos, line = next(input)
         if (close_block_data := close_block(line)) is None:
-            if not line.startswith(block_data.indent):
+            if not line.strip():
+                content += line.lstrip(" \t")
+            elif not line.startswith(block_data.indent):
                 raise IndentationError(pos)
-            content += line.removeprefix(block_data.indent)
+            else:
+                content += line.removeprefix(block_data.indent)
         else:
             if close_block_data.indent != block_data.indent:
                 raise IndentationError(pos)
@@ -91,10 +99,9 @@ def read_block(namespace: tuple[str, ...], indent: str, input: InputStream) -> G
             if block_data.is_init:
                 extra_indent = block_data.indent.removeprefix(indent)
                 ref = block_data.ref
-                ref_str = ref.name if ref.name.namespace == namespace else str(ref.name)
+                ref_str = ref.name.name if ref.name.namespace == namespace else str(ref.name)
                 return f"{extra_indent}<<{ref_str}>>\n"
             else:
                 return ""
 
     raise ParseError(pos, "unexpected end of file")
-

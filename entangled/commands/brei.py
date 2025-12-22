@@ -5,6 +5,7 @@ import asyncio
 import textwrap
 
 from ..config import Config, read_config
+from ..io import FileCache
 from brei import resolve_tasks, Phony
 from ..logging import logger
 from .main import main
@@ -18,7 +19,7 @@ async def brei_main(target_strs: list[str], force_run: bool, throttle: int | Non
     if not Path(".entangled").exists():
         Path(".entangled").mkdir()
 
-    cfg = Config() | read_config()
+    cfg = Config() | read_config(FileCache())
     db = await resolve_tasks(cfg.brei, Path(".entangled/brei_history"))
     if throttle:
         db.throttle = asyncio.Semaphore(throttle)

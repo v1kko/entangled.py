@@ -27,15 +27,17 @@ def _watch(_stop_event: Event | None = None, _start_event: Event | None = None):
     def stop() -> bool:
         return _stop_event is not None and _stop_event.is_set()
 
+    log.debug("Running daemon")
     run_sync()
 
-    if _start_event:
+    if _start_event is not None:
+        log.debug("Setting start event")
         _start_event.set()
 
     dirs = "."  # find_watch_dirs()
-    
+
     for changes in watchfiles.watch(dirs, stop_event=_stop_event, watch_filter=watch_filter):
-        log.debug(changes)        
+        log.debug(changes)
         run_sync()
 
 
