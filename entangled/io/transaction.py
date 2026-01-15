@@ -223,7 +223,7 @@ def transaction(mode: TransactionMode = TransactionMode.FAIL, fs: AbstractFileCa
 
     with filedb(
             writeonly = (mode == TransactionMode.RESETDB),
-            virtual = isinstance(fs, VirtualFS)) as db:
+            fs = fs) as db:
         if mode == TransactionMode.RESETDB:
             db.clear()
 

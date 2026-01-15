@@ -29,10 +29,10 @@ class Document:
         self.context.config = new_config
 
     def __post_init__(self):
-        self.config |= read_config(FileCache())
+        self.config |= read_config(self.context.fs)
 
-    def input_files(self, fs: AbstractFileCache):
-        return get_input_files(fs, self.config)
+    def input_files(self):
+        return get_input_files(self.context.fs, self.config)
 
     def source_text(self, path: Path) -> tuple[str, set[PurePath]]:
         deps = set()

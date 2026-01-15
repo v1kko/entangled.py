@@ -16,11 +16,10 @@ class Action(Enum):
 
 
 def sync_action(doc: Document) -> Action:
-    fs = FileCache()
-    input_file_list = doc.input_files(fs)
+    input_file_list = doc.input_files()
 
-    with filedb(readonly=True) as db:
-        changed = set(db.changed_files(fs))
+    with filedb(readonly=True, fs=doc.context.fs) as db:
+        changed = set(db.changed_files(doc.context.fs))
 
         if not all(f in db for f in input_file_list):
             return Action.TANGLE

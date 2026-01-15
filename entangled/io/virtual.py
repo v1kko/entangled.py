@@ -45,6 +45,11 @@ def atomic_write(target: Path, content: str, mode: int | None):
 
 
 class AbstractFileCache(ABC):
+    @classmethod
+    @abstractmethod
+    def is_for_real(cls) -> bool:
+        ...
+
     @abstractmethod
     def __getitem__(self, key: Path) -> FileData:
         ...
@@ -73,6 +78,10 @@ class AbstractFileCache(ABC):
 class VirtualFS(AbstractFileCache):
     _data: dict[Path, FileData] = field(default_factory=dict)
 
+    @classmethod
+    def is_for_real(cls) -> bool:
+        return False
+
     def __getitem__(self, key: Path) -> FileData:
         return self._data[key]
 
@@ -83,7 +92,7 @@ class VirtualFS(AbstractFileCache):
         del self._data[key]
 
     def glob(self, pattern: str) -> Iterable[Path]:
-        return filter(lambda p: p.match(pattern), self._data.keys())
+        return filter(lambda p: p.full_match(pattern), self._data.keys())
 
     @override
     def write(self, key: Path, content: str, mode: int | None = None):
@@ -107,6 +116,10 @@ class FileCache(AbstractFileCache):
     This acts as a mapping from `Path` to `FileData`. Removing items actually deletes files.
     """
     _data: dict[Path, FileData] = field(default_factory=dict)
+
+    @classmethod
+    def is_for_real(cls) -> bool:
+        return True
 
     @override
     def __getitem__(self, key: Path) -> FileData:
