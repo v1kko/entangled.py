@@ -10,7 +10,7 @@ def test_transaction(tmp_path: Path):
     with chdir(tmp_path):
         fs = FileCache()
 
-        with filedb() as db:
+        with filedb(fs=fs) as db:
             t = Transaction(db)
             t.write(Path("a"), "hello", [])
             t.write(Path("b"), "goodbye", [Path("a")])
@@ -25,7 +25,7 @@ def test_transaction(tmp_path: Path):
 
         fs.reset()
         print(Path(".entangled/filedb.json").read_text())
-        with filedb() as db:
+        with filedb(fs=fs) as db:
             assert Path("a") in db
             assert Path("b") in db
             assert list(db.changed_files(fs)) == [Path("a")]
@@ -38,7 +38,7 @@ def test_transaction(tmp_path: Path):
             assert isinstance(t.actions[0], Write)
             assert not t.all_ok()
 
-        with filedb() as db:
+        with filedb(fs=fs) as db:
             t = Transaction(db)
             t.write(Path("a"), "goodbye", [])
             assert isinstance(t.actions[0], Write)

@@ -6,12 +6,9 @@ This command will read the markdown sources, then pretend to be tangling
 without actually writing out to source files.
 """
 
-from ..io import TransactionMode, transaction
-from ..errors.user import UserError
-from ..interface import Document
+from ..io import TransactionMode
 from .main import main
-
-import logging
+from .tangle import do_tangle
 
 
 @main.command(short_help="Reset the file database.")
@@ -20,10 +17,4 @@ def reset():
     Resets the file database. This performs a tangle without actually
     writing output to the files, but updating the database as if we were.
     """
-    doc = Document()
-    mode = TransactionMode.RESETDB
-
-    with transaction(mode) as t:
-        doc.load(t)
-        doc.tangle(t)
-        t.clear_orphans()
+    do_tangle(mode=TransactionMode.RESETDB)

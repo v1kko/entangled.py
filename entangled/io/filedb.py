@@ -1,6 +1,6 @@
 from __future__ import annotations
 from collections.abc import Generator
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 import json
 from pathlib import Path
 from typing import Any
@@ -16,7 +16,7 @@ from entangled.errors.user import HelpfulUserError
 
 from ..version import __version__
 from ..utility import ensure_parent
-from .virtual import AbstractFileCache
+from .virtual import AbstractFileCache, FileCache
 from .stat import Stat, hexdigest
 
 
@@ -92,12 +92,16 @@ def new_db() -> FileDB:
     return FileDB(__version__, {}, set())
 
 
-def read_filedb() -> FileDB:
-    if not FILEDB_PATH.exists():
+def read_filedb(fs: AbstractFileCache | None = None) -> FileDB:
+    if fs is None:
+        fs = FileCache()
+
+    if FILEDB_PATH not in fs:
         return new_db()
 
     logging.debug("Reading FileDB")
-    raw: Any = json.load(open(FILEDB_PATH, "rb"))   # pyright: ignore[reportExplicitAny, reportAny]
+    db_contents = fs[FILEDB_PATH].content
+    raw: Any = json.loads(db_contents)   # pyright: ignore[reportExplicitAny, reportAny]
     if raw["version"] != __version__:
         raise HelpfulUserError(
             f"File database was created with a different version of Entangled ({raw["version"]}).\n" +
@@ -112,20 +116,29 @@ def read_filedb() -> FileDB:
     return db
 
 
-def write_filedb(db: FileDB):
+def write_filedb(db: FileDB, fs: AbstractFileCache | None = None):
+    if fs is None:
+        fs = FileCache()
+
     logging.debug("Writing FileDB")
-    _ = FILEDB_PATH.open("wb").write(msgspec.json.encode(db, order="sorted"))
+    content = msgspec.json.encode(db, order="sorted").decode(encoding="utf-8")
+    _ = fs.write(FILEDB_PATH, content)
 
 
 @contextmanager
-def filedb(readonly: bool = False, writeonly: bool = False, virtual: bool = False):
+def filedb(readonly: bool = False, writeonly: bool = False, virtual: bool = False, fs: AbstractFileCache | None = None):
+    if fs is None:
+        fs = FileCache()
+
     if virtual:
         yield new_db()
         return
 
-    lock = FileLock(ensure_parent(FILEDB_LOCK_PATH))
+    lock = FileLock(ensure_parent(FILEDB_LOCK_PATH)) if fs.is_for_real() \
+        else nullcontext()
+
     with lock:
-        db = read_filedb() if not writeonly else new_db()
+        db = read_filedb(fs) if not writeonly else new_db()
         yield db
         if not readonly:
-            write_filedb(db)
+            write_filedb(db, fs)

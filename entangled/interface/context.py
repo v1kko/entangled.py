@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from collections.abc import Generator, Iterable
 
+from ..io import AbstractFileCache, FileCache
 from ..config import Config, ConfigUpdate
 from ..hooks import HookBase, hooks, create_hook
 from ..model import Content, ReferenceMap
@@ -16,6 +17,7 @@ log = logger()
 
 @dataclass
 class Context:
+    fs: AbstractFileCache = field(default_factory=FileCache)
     config: Config = Config()
     _hook_states: dict[str, HookBase.State] = field(default_factory=dict)
     _hooks: dict[str, HookBase] = field(default_factory=dict)
@@ -33,7 +35,7 @@ class Context:
             self._hooks[h] = hook
 
     def __or__(self, update: ConfigUpdate | None) -> Context:
-        return Context(self.config | update, self._hook_states)
+        return Context(self.fs, self.config | update, self._hook_states)
 
     @property
     def hooks(self) -> list[HookBase]:

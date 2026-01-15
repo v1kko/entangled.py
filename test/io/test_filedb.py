@@ -40,13 +40,13 @@ def test_stat(example_files: Path):
 def test_filedb(example_files: Path):
     with chdir(example_files):
         fs = FileCache()
-        with filedb() as db:
+        with filedb(fs=fs) as db:
             for n in "abcd":
                 db.update(fs, Path(n))
 
         fs.write(Path("d"), "mars")
 
-        with filedb() as db:
+        with filedb(fs=fs) as db:
             assert list(db.changed_files(fs)) == [Path("d")]
             db.update(fs, Path("d"))
             assert list(db.changed_files(fs)) == []
