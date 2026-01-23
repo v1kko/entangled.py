@@ -5,7 +5,7 @@
   inputs.pyproject-nix.inputs.nixpkgs.follows = "nixpkgs";
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
-  inputs.brei_flake.url = "github:entangled/entangled/brei";
+  inputs.brei_flake.url = "github:entangled/brei";
   inputs.repl-session_flake.url = "github:entangled/repl-session";
 
   outputs = { nixpkgs, pyproject-nix, flake-utils, brei_flake, repl-session_flake, ... }: flake-utils.lib.eachDefaultSystem (system:
