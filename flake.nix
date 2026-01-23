@@ -1,5 +1,5 @@
 {
-  description = "Python portt of Entangled";
+  description = "Python port of Entangled";
 
   inputs.pyproject-nix.url = "github:pyproject-nix/pyproject.nix";
   inputs.pyproject-nix.inputs.nixpkgs.follows = "nixpkgs";
