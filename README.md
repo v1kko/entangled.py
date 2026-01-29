@@ -33,6 +33,12 @@ Or, if you prefer plain old `pip`,
 pip install entangled-cli
 ```
 
+Or, if you prefer the nix package manager:
+
+```
+nix run github:entangled/entangled.py
+```
+
 ## Use
 
 Run the `entangled watch` daemon in the root of your project folder. By default all Markdown files are monitored for fenced code blocks like so:
