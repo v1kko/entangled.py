@@ -17,7 +17,11 @@ class Block:
     content: str
 
 
-OPEN_BLOCK_EXPR = r"^(?P<indent>\s*).* ~/~ begin <<(?P<source>[^#<>]+)#(?P<ref_name>[^#<>]+)>>\[(?P<ref_count>\d+|init)\]"
+# Pre-compile regex patterns at module level (avoid re-compilation on every call)
+_OPEN_BLOCK_PATTERN = re.compile(
+    r"^(?P<indent>\s*).* ~/~ begin <<(?P<source>[^#<>]+)#(?P<ref_name>[^#<>]+)>>\[(?P<ref_count>\d+|init)\]"
+)
+_CLOSE_BLOCK_PATTERN = re.compile(r"^(?P<indent>\s*).* ~/~ end")
 
 
 @dataclass
@@ -28,7 +32,7 @@ class OpenBlockData:
 
 
 def open_block(line: str) -> OpenBlockData | None:
-    if not (m := re.match(OPEN_BLOCK_EXPR, line)):
+    if not (m := _OPEN_BLOCK_PATTERN.match(line)):
         return None
 
     ref_name = ReferenceName.from_str(m["ref_name"])
@@ -38,16 +42,13 @@ def open_block(line: str) -> OpenBlockData | None:
     return OpenBlockData(ReferenceId(ref_name, md_source, ref_count), is_init, m["indent"])
 
 
-CLOSE_BLOCK_EXPR = r"^(?P<indent>\s*).* ~/~ end"
-
-
 @dataclass
 class CloseBlockData:
     indent: str
 
 
 def close_block(line: str) -> CloseBlockData | None:
-    if not (m := re.match(CLOSE_BLOCK_EXPR, line)):
+    if not (m := _CLOSE_BLOCK_PATTERN.match(line)):
         return None
     return CloseBlockData(m["indent"])
 
@@ -76,25 +77,26 @@ def read_block(namespace: tuple[str, ...], indent: str, input: InputStream) -> G
     if block_data.indent < indent:
         raise IndentationError(pos)
 
-    content = ""
+    # Use list for O(n) instead of O(n²) string concatenation
+    content_parts: list[str] = []
     while input:
         line = yield from read_block(block_data.ref.name.namespace, block_data.indent, input)
         if line is not None:
-            content += line
+            content_parts.append(line)
             continue
 
         pos, line = next(input)
         if (close_block_data := close_block(line)) is None:
             if not line.strip():
-                content += line.lstrip(" \t")
+                content_parts.append(line.lstrip(" \t"))
             elif not line.startswith(block_data.indent):
                 raise IndentationError(pos)
             else:
-                content += line.removeprefix(block_data.indent)
+                content_parts.append(line.removeprefix(block_data.indent))
         else:
             if close_block_data.indent != block_data.indent:
                 raise IndentationError(pos)
-            yield Block(block_data.ref, content)
+            yield Block(block_data.ref, "".join(content_parts))
 
             if block_data.is_init:
                 extra_indent = block_data.indent.removeprefix(indent)

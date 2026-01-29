@@ -14,16 +14,27 @@ from ..logging import logger
 
 log = logger()
 
+# Cache for compiled regex patterns (keyed by comment opener)
+_yaml_header_pattern_cache: dict[str, re.Pattern[str]] = {}
+
+
+def _get_yaml_header_pattern(comment_open: str) -> re.Pattern[str]:
+    """Get or create a cached compiled pattern for YAML header matching."""
+    if comment_open not in _yaml_header_pattern_cache:
+        pattern = re.escape(comment_open) + r"\s*\|(.*)"
+        _yaml_header_pattern_cache[comment_open] = re.compile(pattern)
+    return _yaml_header_pattern_cache[comment_open]
+
 
 def split_yaml_header(language: Language, source: str) -> tuple[str, str, object]:
     """Split source into YAML header and body."""
-    trigger: str = re.escape(language.comment.open) + r"\s*\|(.*)"
+    pattern = _get_yaml_header_pattern(language.comment.open)
     lines = source.splitlines(keepends=True)
     header_lines: list[str] = []
     body_start: int = 0
 
     for i, line in enumerate(lines):
-        if m := re.match(trigger, line):
+        if m := pattern.match(line):
             header_lines.append(m.group(1))
             continue
 
