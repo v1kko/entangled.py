@@ -4,7 +4,6 @@ from contextlib import contextmanager
 from pathlib import PurePath
 
 import re
-import os
 from typing import override
 
 
@@ -20,6 +19,10 @@ from .reference_name import ReferenceName
 
 
 log = logger()
+
+# Pre-compiled regex for reference detection (e.g., "    <<refname>>")
+_REF_PATTERN = re.compile(r"^(?P<indent>\s*)<<(?P<refname>[\w:/_.-]+)>>\s*$")
+
 
 @dataclass
 class CyclicReference(UserError):
@@ -89,7 +92,7 @@ def naked_tangler(refs: ReferenceMap) -> Tangler:
 
         with visitor.visit(ref):
             for line in lines(code_block.source):
-                if m := re.match(r"^(?P<indent>\s*)<<(?P<refname>[\w:/_.-]+)>>\s*$", line.rstrip()):
+                if m := _REF_PATTERN.match(line.rstrip()):
                     ref_name = ReferenceName.from_str(m["refname"], code_block.namespace)
                     log.debug(f"tangling reference `{ref_name}`")
                     if not refs.has_name(ref_name):
@@ -146,13 +149,14 @@ def tangle_ref(
         raise KeyError(name)
     tangler = tanglers[annotation](refs)
     deps: set[PurePath] = set()
-    out = ""
 
-    ref_lst = refs.select_by_name(name)
-    for line in tangler(tangler, deps, ref_lst[0], False, True):
-        out += line
-    for ref in ref_lst[1:]:
-        for line in tangler(tangler, deps, ref, False, False):
-            out += line
+    def all_lines():
+        ref_lst = refs.select_by_name(name)
+        yield from tangler(tangler, deps, ref_lst[0], False, True)
+        for ref in ref_lst[1:]:
+            yield from tangler(tangler, deps, ref, False, False)
+
+    # Use join for O(n) instead of O(n²) string concatenation
+    out = "".join(all_lines())
 
     return out, deps

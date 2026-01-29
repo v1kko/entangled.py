@@ -35,14 +35,15 @@ class Document:
         return get_input_files(self.context.fs, self.config)
 
     def source_text(self, path: Path) -> tuple[str, set[PurePath]]:
-        deps = set()
-        text = ""
+        deps: set[PurePath] = set()
+        # Use list for O(n) instead of O(n²) string concatenation
+        text_parts: list[str] = []
         for content in self.content[path]:
             t, d = content_to_text(self.reference_map, content)
             if d is not None:
                 deps.add(d)
-            text += t
-        return text, deps
+            text_parts.append(t)
+        return "".join(text_parts), deps
 
     def target_text(self, path: PurePath) -> tuple[str, set[PurePath]]:
         ref_name = self.reference_map.select_by_target(path)

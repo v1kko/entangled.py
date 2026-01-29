@@ -14,6 +14,17 @@ from typing import (
 import re
 
 
+# Cache for compiled regex patterns (avoids re-compilation)
+_pattern_cache: dict[str, re.Pattern[str]] = {}
+
+
+def _cached_pattern(regex: str) -> re.Pattern[str]:
+    """Get or create a cached compiled pattern."""
+    if regex not in _pattern_cache:
+        _pattern_cache[regex] = re.compile(f"^{regex}")
+    return _pattern_cache[regex]
+
+
 @dataclass
 class Failure(Exception):
     """Base class for parser failures."""
@@ -198,7 +209,7 @@ def many[T](p: Parser[T]) -> Parser[list[T]]:
 
 
 def matching(regex: str) -> Parser[tuple[str, ...]]:
-    pattern = re.compile(f"^{regex}")
+    pattern = _cached_pattern(regex)
 
     @parser
     def _matching(inp: str) -> tuple[tuple[str, ...], str]:
@@ -210,7 +221,7 @@ def matching(regex: str) -> Parser[tuple[str, ...]]:
 
 
 def fullmatch(regex: str) -> Parser[str]:
-    pattern = re.compile(f"^{regex}")
+    pattern = _cached_pattern(regex)
 
     @parser
     def _fullmatch(inp: str):
